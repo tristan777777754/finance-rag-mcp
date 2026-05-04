@@ -1,0 +1,402 @@
+[
+  {
+    "id": 1,
+    "query": "What were Apple's total net sales in fiscal year 2024?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple's total net sales in fiscal year 2024 were $391.0 billion, representing a slight increase from $383.3 billion in fiscal year 2023."
+  },
+  {
+    "id": 2,
+    "query": "What was Apple's net income in fiscal year 2024?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple's net income in fiscal year 2024 was $93.7 billion, compared to $97.0 billion in fiscal year 2023."
+  },
+  {
+    "id": 3,
+    "query": "How much revenue did Apple's iPhone segment generate in fiscal year 2024?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple's iPhone segment generated $201.2 billion in net sales in fiscal year 2024, making it the largest product category by revenue."
+  },
+  {
+    "id": 4,
+    "query": "What was Apple's Services segment revenue in fiscal year 2024?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple's Services segment revenue was $96.2 billion in fiscal year 2024, up from $85.2 billion in fiscal year 2023, reflecting continued growth in the App Store, Apple Music, iCloud, and other subscription services."
+  },
+  {
+    "id": 5,
+    "query": "What was Apple's gross margin percentage in fiscal year 2024?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple's gross margin was approximately 46.2% in fiscal year 2024, with gross profit of $180.7 billion on net sales of $391.0 billion."
+  },
+  {
+    "id": 6,
+    "query": "What was Microsoft's total revenue in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": "Microsoft's total revenue for fiscal year 2025 (year ended June 30, 2025) was $281.7 billion, up from $245.1 billion in fiscal year 2024."
+  },
+  {
+    "id": 7,
+    "query": "What was Microsoft's net income in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 8,
+    "query": "By how much did Microsoft Azure revenue grow in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": "Microsoft Azure and other cloud services revenue grew 34% in fiscal year 2025, driven by demand for AI and cloud infrastructure services."
+  },
+  {
+    "id": 9,
+    "query": "What was Microsoft's Intelligent Cloud segment revenue in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": "Microsoft's Intelligent Cloud segment revenue was $106.3 billion in fiscal year 2025, up from $87.5 billion in fiscal year 2024."
+  },
+  {
+    "id": 10,
+    "query": "What was Microsoft's gross margin percentage in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": "Microsoft's Microsoft Cloud gross margin was approximately 69% in fiscal year 2025, decreasing slightly due to the impact of scaling AI infrastructure."
+  },
+  {
+    "id": 11,
+    "query": "What was Nvidia's total revenue in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's total revenue in fiscal year 2025 was $130.5 billion, representing a 114% increase from $60.9 billion in fiscal year 2024, driven primarily by explosive demand for AI data center chips."
+  },
+  {
+    "id": 12,
+    "query": "What was Nvidia's Data Center segment revenue in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's Data Center segment revenue was $115.2 billion in fiscal year 2025, a 142% increase year-over-year, accounting for approximately 88% of total company revenue."
+  },
+  {
+    "id": 13,
+    "query": "What was Nvidia's gross margin in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's gross margin was approximately 75.0% in fiscal year 2025, with gross profit of $97.9 billion on total revenue of $130.5 billion."
+  },
+  {
+    "id": 14,
+    "query": "What was Nvidia's net income in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's net income in fiscal year 2025 was $72.9 billion, compared to $29.8 billion in fiscal year 2024, reflecting the dramatic revenue growth in AI infrastructure."
+  },
+  {
+    "id": 15,
+    "query": "What was Nvidia's Gaming segment revenue in fiscal year 2025?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's Gaming segment revenue was $11.4 billion in fiscal year 2025, a 9% increase year-over-year, as the segment recovered while remaining a much smaller contributor compared to Data Center."
+  },
+  {
+    "id": 16,
+    "query": "What are the primary risk factors Apple disclosed in its fiscal year 2024 10-K?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple's key risk factors in its FY2024 10-K include: macroeconomic conditions affecting consumer spending, intense competition in all product categories, dependence on third-party manufacturing partners (primarily in China), regulatory risks in the EU and other jurisdictions related to App Store policies, cybersecurity threats, supply chain concentration risks, and uncertainty around emerging technologies and AI competition."
+  },
+  {
+    "id": 17,
+    "query": "How does Apple describe its competitive strategy in the 10-K?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple describes its competitive strategy as centered on hardware-software integration, creating a seamless ecosystem across devices and services. The company competes on the basis of innovation, design, ease of use, and customer experience rather than price. Apple emphasizes its services ecosystem as a key differentiator that creates switching costs and recurring revenue."
+  },
+  {
+    "id": 18,
+    "query": "What does Microsoft's FY2025 10-K say about its AI strategy and investments?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": "Microsoft's 10-K describes AI as a transformative priority across all its products. Key initiatives include: Copilot integration across Microsoft 365 and Azure, a strategic partnership and investment in OpenAI, Azure AI services for enterprise customers, and GitHub Copilot for developers. Microsoft positions AI as a growth driver for its cloud business and an opportunity to upsell existing enterprise customers."
+  },
+  {
+    "id": 19,
+    "query": "What supply chain risks does Nvidia disclose in its fiscal year 2025 10-K?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's FY2025 10-K discloses several supply chain risks: concentration risk from relying on TSMC for advanced chip manufacturing, long lead times for semiconductor fabrication capacity, US export restrictions limiting sales to China and other countries, potential disruptions from geopolitical tensions in Taiwan, and the challenge of rapidly scaling supply to meet unprecedented AI chip demand."
+  },
+  {
+    "id": 20,
+    "query": "How does Apple break down its revenue by geographic segment in fiscal year 2024?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple's FY2024 revenue by geography: Americas $167.0 billion (43%), Europe $101.3 billion (26%), Greater China $67.0 billion (17%), Japan $25.1 billion (6%), and Rest of Asia Pacific $30.7 billion (8%). Greater China revenue declined from $72.6 billion in FY2023, reflecting competitive pressure from domestic brands."
+  },
+  {
+    "id": 21,
+    "query": "What does Microsoft's FY2025 10-K say about its gaming business and Xbox strategy?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": "Microsoft's 10-K discusses the gaming segment under More Personal Computing, with Xbox content and services revenue growing significantly following the Activision Blizzard acquisition. The strategy focuses on Game Pass subscription growth, cloud gaming via Xbox Cloud Gaming, and expanding first-party game content. The segment generated approximately $16.1 billion in Xbox revenue."
+  },
+  {
+    "id": 22,
+    "query": "What does Nvidia's 10-K say about the CUDA platform and its competitive moat?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's 10-K describes CUDA as the foundational programming platform for GPU computing, with over 15 years of developer adoption. The filing highlights CUDA's extensive ecosystem of tools, libraries, and frameworks as a significant competitive advantage. This deep developer lock-in makes it difficult for competitors like AMD ROCm to displace Nvidia even with comparable hardware, creating a durable software moat."
+  },
+  {
+    "id": 23,
+    "query": "What does Apple disclose about its share repurchase program in fiscal year 2024?",
+    "query_type": "RAG_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": "Apple repurchased approximately $95 billion of its common stock during fiscal year 2024 under its share repurchase program. The Board also authorized an additional $110 billion repurchase program. Apple has been one of the largest share repurchasers in history, significantly reducing share count and supporting earnings per share growth even in periods of flat net income."
+  },
+  {
+    "id": 24,
+    "query": "How does Microsoft describe its LinkedIn business in the FY2025 10-K?",
+    "query_type": "RAG_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": "Microsoft describes LinkedIn as part of its Productivity and Business Processes segment, generating approximately $16.4 billion in revenue in FY2024. LinkedIn's growth is driven by premium subscriptions, talent solutions, marketing solutions, and learning products. Microsoft highlights LinkedIn's network effects and professional data as competitive advantages that complement its enterprise software portfolio."
+  },
+  {
+    "id": 25,
+    "query": "What does Nvidia say about its Automotive segment and future opportunities in its 10-K?",
+    "query_type": "RAG_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": "Nvidia's 10-K reports Automotive segment revenue of $1.7 billion in FY2025, a 55% increase year-over-year. The segment includes DRIVE platform for autonomous vehicles and AI cockpit systems. Nvidia describes automotive as a long-term growth opportunity, citing a design win pipeline representing over $14 billion in lifetime revenue, though commercialization timelines remain extended."
+  },
+  {
+    "id": 26,
+    "query": "What is Apple's current stock price and P/E ratio?",
+    "query_type": "MCP_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 27,
+    "query": "What is Microsoft's current market capitalization?",
+    "query_type": "MCP_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 28,
+    "query": "What is Nvidia's current stock price and 52-week high and low?",
+    "query_type": "MCP_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 29,
+    "query": "When is Apple's next earnings report date?",
+    "query_type": "MCP_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 30,
+    "query": "When is Microsoft's next earnings report date and what is the EPS estimate?",
+    "query_type": "MCP_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 31,
+    "query": "Compare the current P/E ratios of Apple, Microsoft, and Nvidia.",
+    "query_type": "MCP_ONLY",
+    "ticker": "AAPL,MSFT,NVDA",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 32,
+    "query": "What is Apple's current EV/EBITDA and Price-to-Book ratio?",
+    "query_type": "MCP_ONLY",
+    "ticker": "AAPL",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 33,
+    "query": "What is Nvidia's current market cap and return on equity?",
+    "query_type": "MCP_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 34,
+    "query": "What is Microsoft's current dividend yield and payout history?",
+    "query_type": "MCP_ONLY",
+    "ticker": "MSFT",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 35,
+    "query": "What 10-K and 10-Q filings are available for Nvidia on SEC EDGAR?",
+    "query_type": "MCP_ONLY",
+    "ticker": "NVDA",
+    "fiscal_year": null,
+    "expected_answer": ""
+  },
+  {
+    "id": 36,
+    "query": "Compare Nvidia's gross margin from its FY2025 10-K with its current EV/EBITDA valuation. Is the market pricing in continued margin expansion?",
+    "query_type": "HYBRID",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 37,
+    "query": "Apple's Services revenue grew significantly in FY2024. How does the current stock valuation reflect this high-margin business shift?",
+    "query_type": "HYBRID",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": ""
+  },
+  {
+    "id": 38,
+    "query": "Microsoft Azure grew 29% in FY2024 according to its 10-K. How does Microsoft's current P/E compare to cloud-pure-play peers?",
+    "query_type": "HYBRID",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 39,
+    "query": "Nvidia reported $130.5 billion in revenue in FY2025. Given its current market cap, what revenue multiple is the market assigning?",
+    "query_type": "HYBRID",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 40,
+    "query": "Compare Apple, Microsoft, and Nvidia's revenue from their most recent 10-K filings alongside their current market capitalizations. Which has the highest Price-to-Sales ratio?",
+    "query_type": "HYBRID",
+    "ticker": "AAPL,MSFT,NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 41,
+    "query": "Apple's Greater China revenue declined in FY2024 according to its 10-K. How is the market currently pricing this geopolitical risk into the stock?",
+    "query_type": "HYBRID",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": ""
+  },
+  {
+    "id": 42,
+    "query": "Microsoft's net income was $88 billion in FY2024. What is its current Price-to-Earnings ratio and how does it compare to its earnings growth rate?",
+    "query_type": "HYBRID",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 43,
+    "query": "Nvidia spent $12.9 billion on R&D in FY2025. Given its current market cap, how does its R&D intensity compare to the implied future growth priced in?",
+    "query_type": "HYBRID",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 44,
+    "query": "Apple's iPhone revenue was $201 billion in FY2024. Considering its current stock price, what does the market imply about iPhone's future growth?",
+    "query_type": "HYBRID",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": ""
+  },
+  {
+    "id": 45,
+    "query": "Microsoft's Intelligent Cloud operating margin is strong per its FY2024 10-K. How does its current valuation compare to Amazon AWS and Google Cloud segments?",
+    "query_type": "HYBRID",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 46,
+    "query": "Nvidia's 10-K discloses concentration risk with TSMC. Does its current stock price seem to adequately price in this supply chain risk?",
+    "query_type": "HYBRID",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 47,
+    "query": "Apple repurchased $95 billion of stock in FY2024. Given its current stock price and cash position, is continued buyback sustainable?",
+    "query_type": "HYBRID",
+    "ticker": "AAPL",
+    "fiscal_year": "2024",
+    "expected_answer": ""
+  },
+  {
+    "id": 48,
+    "query": "Which company - Apple, Microsoft, or Nvidia - had the highest return on equity in their most recent fiscal year, and how does each currently trade on a Price-to-Book basis?",
+    "query_type": "HYBRID",
+    "ticker": "AAPL,MSFT,NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 49,
+    "query": "Microsoft's LinkedIn generated $16.4 billion in FY2024 revenue. How does this compare to the current valuation of pure-play professional networking or HR tech companies?",
+    "query_type": "HYBRID",
+    "ticker": "MSFT",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  },
+  {
+    "id": 50,
+    "query": "Nvidia's Automotive segment pipeline exceeds $14 billion per its 10-K. Given its current stock price, how much of this future revenue opportunity appears to be priced in?",
+    "query_type": "HYBRID",
+    "ticker": "NVDA",
+    "fiscal_year": "2025",
+    "expected_answer": ""
+  }
+]

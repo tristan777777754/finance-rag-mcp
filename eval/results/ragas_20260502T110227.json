@@ -1,0 +1,8 @@
+{
+  "faithfulness": 0.9047,
+  "answer_relevancy": 0.4123,
+  "context_recall": 0.4484,
+  "n_evaluated": 47,
+  "n_failed": 0,
+  "n_skipped_multi_company": 3
+}
