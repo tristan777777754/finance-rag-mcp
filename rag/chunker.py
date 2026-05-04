@@ -29,14 +29,28 @@ def chunk_filing(pages, ticker, filing_type, fiscal_year):
     }
 
     chunks = []
+    current_section = ""
     for page in pages:
-        section = _detect_section(page["text"])
-        is_table = _is_table_section(section)
+        detected_section = _detect_section(page["text"])
+        if detected_section:
+            current_section = detected_section
+        section = current_section
+        page_tables = page.get("tables") or []
+        is_table = _is_table_section(section) or _has_financial_table(page["text"], page_tables)
+
+        for table_index, table_text in enumerate(page_tables, start=1):
+            if table_text.strip():
+                chunks.append(Chunk(
+                    text=_format_table_chunk(page["text"], table_text, table_index),
+                    metadata={**base_meta, "page_number": page["page_number"],
+                              "section": section, "section_type": "table",
+                              "table_index": table_index},
+                ))
 
         if is_table:
             # Whole page as one chunk — never split financial tables
             chunks.append(Chunk(
-                text=page["text"].strip(),
+                text=_format_page_with_tables(page["text"], page_tables),
                 metadata={**base_meta, "page_number": page["page_number"],
                           "section": section, "section_type": "table"},
             ))
@@ -60,6 +74,38 @@ def _detect_section(text: str) -> str:
 def _is_table_section(section: str) -> bool:
     """Item 8 contains financial statements — never split."""
     return bool(re.search(r"item\s+8\b", section, re.IGNORECASE))
+
+
+def _has_financial_table(text: str, tables: list[str]) -> bool:
+    """Detect financial statement tables even when the Item 8 heading is on a prior page."""
+    combined = "\n".join([text, *tables])
+    patterns = [
+        r"consolidated statements? of",
+        r"total net sales",
+        r"net income",
+        r"gross margin",
+        r"segment operating performance",
+        r"products and services performance",
+    ]
+    return any(re.search(pattern, combined, re.IGNORECASE) for pattern in patterns)
+
+
+def _format_table_chunk(page_text: str, table_text: str, table_index: int) -> str:
+    """Attach nearby page heading text to a whole extracted table."""
+    heading = "\n".join(page_text.splitlines()[:8]).strip()
+    return f"Extracted Table {table_index}\n{heading}\n\n{table_text}".strip()
+
+
+def _format_page_with_tables(page_text: str, tables: list[str]) -> str:
+    """Keep financial table pages intact with extracted tables appended."""
+    table_block = "\n\n".join(
+        f"Extracted Table {i}\n{table}"
+        for i, table in enumerate(tables, start=1)
+        if table.strip()
+    )
+    if table_block:
+        return f"{page_text.strip()}\n\n{table_block}".strip()
+    return page_text.strip()
 
 def _token_len(text: str) -> int:
     return len(_ENC.encode(text))
