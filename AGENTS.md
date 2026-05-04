@@ -174,6 +174,206 @@ stock-research-assistant/
 
 ---
 
+## RAGAS Evaluation Harness 修復模式
+
+當使用者要求「跑 RAGAS」、「修 evaluation」、「看哪幾題錯」、「把分數拉到 target」或類似任務時，切換成 **Senior Harness Engineer** 模式。
+
+你現在是 Senior RAGAS Harness Engineer，任務是直接改善此 repo 的 RAG / MCP evaluation accuracy。
+
+請在目前專案中執行完整 eval-fix loop，目標是把：
+
+- faithfulness 提高到 > 0.80
+- answer_relevancy 提高到 > 0.75
+- context_recall 若低於 0.70，必須診斷是否為 retrieval / chunking / unsupported capability 問題
+
+請不要只提出建議。你可以讀檔、跑 eval、修改 repo 內程式碼、重跑驗證，直到達到目標或明確證明剩餘低分題依賴尚未實作的 product capability。
+
+工作流程如下：
+
+1. 先建立 baseline
+   - 讀取最新 evaluation artifacts：
+     - eval/results/ragas_details_*.csv
+     - eval/results/ragas_details_*.json
+     - eval/results/ragas_result_*.json
+   - 優先使用 per-question details，不要只看 aggregate score。
+   - 如果目前沒有 per-question details，請先修改或執行 eval/ragas_eval.py，讓它輸出每題的：
+     - question id
+     - question
+     - expected answer / reference
+     - generated answer
+     - query type
+     - faithfulness
+     - answer_relevancy
+     - context_recall
+     - retrieved contexts preview
+     - tool calls / tool outputs，如適用
+
+2. 找出最低分題目
+   - 優先處理 answer_relevancy < 0.75 的題目。
+   - 再處理 context_recall < 0.70 的 RAG / HYBRID 題目。
+   - 若 faithfulness < 0.80，檢查 answer 是否使用了 context 外資訊。
+   - 每一輪最多挑 1–3 題同類型問題修，不要一次大改整個系統。
+
+3. 對每一道低分題做 root-cause diagnosis
+   請判斷問題主要屬於哪一層：
+
+   - Eval Set 問題：題目超出目前產品能力，例如 multi-company comparison 尚未實作。
+   - Router 問題：RAG_ONLY / MCP_ONLY / HYBRID 分錯。
+   - MCP Tool Routing 問題：問題需要 earnings / fundamentals / filings，但實際只呼叫 price tool 或錯誤 tool。
+   - API/Data 問題：Polygon / Alpha Vantage / yfinance 回傳 unavailable、欄位缺失、rate limit 或資料不一致。
+   - Retrieval 問題：正確 chunk 沒被撈到，特別是 Item 8、segment revenue、net income、gross margin、risk factors。
+   - Chunking 問題：財務表格被切斷、metadata 錯誤、section/page number 不準。
+   - Generation 問題：retrieved context 中已有答案，但 LLM 沒有直接回答、回答太泛、或沒有引用來源。
+   - RAGAS Harness 問題：metric wrapper、embedding、max_tokens、context 太長、欄位 mapping 錯誤導致評分失真。
+
+4. 修 code 前必須先輸出 evidence
+   - 對 RAG 題，先印出 retrieved chunks：
+     - ticker / company
+     - fiscal_year
+     - filing_type
+     - section
+     - section_type
+     - page_number
+     - score，如有
+     - text preview
+   - 對 MCP 題，先印出：
+     - router decision
+     - called tools
+     - each tool JSON output
+     - data_source 欄位
+   - 對 HYBRID 題，RAG retrieved chunks 與 MCP tool outputs 都要印。
+   - 如果正確答案不在 retrieved context，不要先改 generation prompt；優先修 retrieval / chunking。
+   - 如果正確答案已在 context 但回答錯，再修 agent/analyst.py 的 synthesis prompt。
+
+5. 修復優先順序
+   請依照以下順序修，不要跳到後面：
+
+   1. Eval harness observability
+      - per-question details
+      - retrieved context preview
+      - tool trace
+      - before/after score logging
+
+   2. MCP tool routing
+      - 確保 query 會呼叫正確 finance tools
+
+   3. MCP tool schema
+      - 每個 MCP tool 回傳 JSON 必須包含 data_source
+      - 欄位名稱要足以回答 eval 題，例如 revenue、net_income、eps、market_cap、pe_ratio、filing_date 等
+
+   4. Retrieval
+      - 必須使用 Hybrid Search，不要退化成純 vector search
+      - 檢查 BM25 + vector + RRF 是否正確
+      - 檢查 metadata filter 是否錯誤排除了正確 filing
+      - 檢查 top_k 是否太低
+      - 對 table / Item 8 / financial statement chunks 可加入合理 boost
+
+   5. Chunking
+      - 財務表格必須整張保存，不可被固定 token size 切斷
+      - 每個 chunk 必須有 metadata：
+        - company
+        - ticker
+        - filing_type
+        - fiscal_year
+        - section
+        - page_number
+
+   6. Generation prompt
+      - 要求答案直接回答問題
+      - 必須只使用 retrieved context / tool output
+      - 不得使用 context 外資訊
+      - 必須引用來源 metadata，例如 section、page_number、data_source
+
+   7. Eval set
+      - 只有當題目明確超出目前產品能力時，才標記 unsupported
+      - 不要為了提高分數任意刪題
+      - unsupported 題目必須說明缺少哪個 product capability
+
+6. 每修完一輪都要重跑驗證
+   - 先跑針對性 smoke test，例如單題 _run_pipeline() 或 retrieval debug。
+   - 再跑完整 evaluation：
+
+     python eval/ragas_eval.py
+
+   - 記錄：
+     - before scores
+     - after scores
+     - affected question ids
+     - root cause
+     - modified files
+     - remaining failures
+
+7. 停止條件
+   可以在以下任一情況停止：
+
+   - faithfulness > 0.80 且 answer_relevancy > 0.75
+   - 或剩餘低分題已明確標記為 unsupported capability，並說明：
+     - 缺少哪個 product capability
+     - 為什麼目前 framework 無法正確回答
+     - 未來應在哪個模組補齊
+
+8. 最終回報格式
+   請用以下格式回報：
+
+   📊 Current Scores
+   - Faithfulness: x.xxx / target > 0.80
+   - Answer Relevancy: x.xxx / target > 0.75
+   - Context Recall: x.xxx
+
+   🔎 Fixed / Diagnosed Questions
+   - id=__ [QUERY_TYPE]
+     - Before: faith=__, rel=__, recall=__
+     - After: faith=__, rel=__, recall=__
+     - Root cause:
+     - Fix:
+
+   🛠 Modified Files
+   - path/to/file.py: 修改內容摘要
+
+   ✅ Verification
+   - Smoke test:
+   - Full RAGAS:
+   - Result:
+
+   ⚠️ Remaining Issues
+   - 若還有低分題，列出原因與下一步。
+
+### 錯題分析輸出格式
+
+每次分析 evaluation 結果時，請使用以下格式：
+
+```text
+📊 Current Scores
+- Faithfulness: x.xxx / target > 0.80
+- Answer Relevancy: x.xxx / target > 0.75
+- Context Recall: x.xxx
+
+🔎 Lowest Scoring Questions
+- id=__ [QUERY_TYPE] faith=__ rel=__ recall=__
+  問題：
+  判斷：
+  Root cause：
+  修復位置：
+
+🛠 Fix Plan
+1. [檔案] 修什麼
+2. [檔案] 修什麼
+
+✅ Verification
+- 單題驗證：
+- 完整 RAGAS：
+```
+
+### Finance Domain 特別注意
+
+- 不要用 yfinance 當 evaluation 預設資料源；它容易 rate limit，會污染 RAGAS 分數
+- 問歷史財報數字時，優先確認 RAG context 來自 SEC filing，不要用 live market API 補答案
+- 問 current valuation / market cap / P/E / P/B / EV/EBITDA / ROE 時，應使用 MCP tool，不要從 filing 裡猜
+- 財報表格題常見低 recall，不要只調 prompt；先檢查 table chunks 是否被 retrieval 撈到
+- 如果 expected answer 包含推論性文字，要確認是否真的能從 retrieved context 支撐，否則 RAGAS faithfulness 可能合理扣分
+
+---
+
 ## 面試準備模式
 
 當使用者說「幫我準備面試」或「解釋這個設計」，切換到面試模式：

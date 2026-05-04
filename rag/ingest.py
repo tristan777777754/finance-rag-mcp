@@ -46,7 +46,15 @@ def parse_pdf(pdf_path: str) -> list[dict]:
     return pages
 
 
-_MODEL = SentenceTransformer("BAAI/bge-small-en-v1.5")
+_MODEL: SentenceTransformer | None = None
+
+
+def _get_embedding_model() -> SentenceTransformer:
+    """Load the embedding model only when embeddings are actually needed."""
+    global _MODEL
+    if _MODEL is None:
+        _MODEL = SentenceTransformer("BAAI/bge-small-en-v1.5")
+    return _MODEL
 
 def embed_chunks(chunks) -> list[list[float]]:
     """
@@ -56,7 +64,7 @@ def embed_chunks(chunks) -> list[list[float]]:
         List of embedding vectors (one per chunk).
     """
     texts = [c.text for c in chunks]
-    embeddings = _MODEL.encode(texts, show_progress_bar=True)
+    embeddings = _get_embedding_model().encode(texts, show_progress_bar=True)
     return embeddings.tolist()
 
 _CHROMA_CLIENT = get_chroma_client()
@@ -86,7 +94,7 @@ def ingest_filing(pdf_path: str, ticker: str, filing_type: str, fiscal_year: str
 
 if __name__ == "__main__":
     filings = [
-        ("data/pdfs/AAPL_10K_2025.pdf", "AAPL", "10-K", "2025"),
+        ("data/pdfs/AAPL_10K_2025.pdf", "AAPL", "10-K", "2024"),
         ("data/pdfs/MSFT_10K_2025.pdf", "MSFT", "10-K", "2025"),
         ("data/pdfs/NVDA_10K_2025.pdf", "NVDA", "10-K", "2025"),
     ]

@@ -10,6 +10,7 @@ Flow:
 
 from __future__ import annotations
 import sys, os
+import re
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sentence_transformers import SentenceTransformer
@@ -17,7 +18,15 @@ from rank_bm25 import BM25Okapi
 from rag.chroma_client import get_chroma_client
 
 _CLIENT = get_chroma_client()
-_MODEL = SentenceTransformer("BAAI/bge-small-en-v1.5")
+_MODEL: SentenceTransformer | None = None
+
+
+def _get_embedding_model() -> SentenceTransformer:
+    """Load the embedding model lazily to keep non-vector diagnostics fast."""
+    global _MODEL
+    if _MODEL is None:
+        _MODEL = SentenceTransformer("BAAI/bge-small-en-v1.5")
+    return _MODEL
 
 def build_bm25_index(chunks) -> object:
     tokenized = [c.text.lower().split() for c in chunks]
@@ -37,7 +46,7 @@ def vector_search(
         List of result dicts: {"text": str, "metadata": dict, "score": float}
     """
     collection = _CLIENT.get_collection(collection_name)
-    query_embedding = _MODEL.encode(query).tolist()
+    query_embedding = _get_embedding_model().encode(query).tolist()
     
     results = collection.query(
         query_embeddings=[query_embedding],
@@ -105,6 +114,50 @@ def reciprocal_rank_fusion(
     return [{**docs[k], "rrf_score": scores[k]} for k in ranked]
 
 
+def _finance_boost(query: str, result: dict) -> float:
+    """Apply small domain boosts for SEC sections and financial-statement tables."""
+    query_lower = query.lower()
+    text_lower = result.get("text", "").lower()
+    metadata = result.get("metadata", {})
+    section_lower = str(metadata.get("section", "")).lower()
+    section_type = metadata.get("section_type")
+    boost = 0.0
+
+    if "table of contents" in text_lower:
+        boost -= 0.04
+
+    if "risk factor" in query_lower:
+        if "item 1a" in section_lower:
+            boost += 0.08
+        if any(term in text_lower for term in ["macroeconomic", "competition", "supply chain", "regulatory", "cybersecurity"]):
+            boost += 0.03
+
+    if any(term in query_lower for term in ["geographic", "geography", "greater china", "revenue by geographic"]):
+        if "segment information and geographic data" in text_lower:
+            boost += 0.10
+        if all(term in text_lower for term in ["americas", "europe", "greater china", "japan"]):
+            boost += 0.06
+
+    financial_terms = [
+        "net income",
+        "total revenue",
+        "total net sales",
+        "gross margin",
+        "revenue",
+        "services",
+        "iphone",
+        "gaming",
+        "data center",
+    ]
+    matched_terms = [term for term in financial_terms if term in query_lower and term in text_lower]
+    if matched_terms and section_type == "table":
+        boost += 0.04 + min(len(matched_terms), 3) * 0.015
+    if matched_terms and re.search(r"\b(income statements|statements of operations|segment information)\b", text_lower):
+        boost += 0.04
+
+    return boost
+
+
 def hybrid_search(
     query: str,
     chunks,
@@ -128,6 +181,10 @@ def hybrid_search(
     vector_results = vector_search(query, metadata_filter=metadata_filter, top_k=20)
     bm25_results = bm25_search(query, chunks, bm25_index, top_k=20)
     fused = reciprocal_rank_fusion(vector_results, bm25_results)
+    for result in fused:
+        result["domain_boost"] = _finance_boost(query, result)
+        result["final_score"] = result["rrf_score"] + result["domain_boost"]
+    fused = sorted(fused, key=lambda item: item["final_score"], reverse=True)
     return fused[:top_k]
 
 
