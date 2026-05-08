@@ -142,6 +142,7 @@ def _finance_boost(query: str, result: dict) -> float:
         "net income",
         "total revenue",
         "total net sales",
+        "net sales",
         "gross margin",
         "revenue",
         "services",

@@ -6,6 +6,22 @@ from edgar import get_filings, ingest_from_edgar, CIK_MAP
 from agent.analyst import run
 
 st.set_page_config(page_title="Stock Research AI", layout="wide")
+st.markdown(
+    """
+    <style>
+    html, body, [class*="st-"], .stMarkdown, .stChatMessage {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-style: normal;
+    }
+
+    .stMarkdown em,
+    .stMarkdown i {
+        font-style: normal;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 st.title("Stock Research AI Assistant")
 st.caption("RAG + MCP | SEC 10-K Analysis")
 

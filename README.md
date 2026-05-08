@@ -1,14 +1,32 @@
 # Stock Research AI Assistant
 
-A finance-domain AI assistant built around a **RAG + MCP architecture**.
+A finance-domain AI assistant built around a **RAG + MCP architecture**. It combines SEC filing retrieval with live market-data tools so users can ask grounded stock research questions with citations.
 
-The project combines SEC filing retrieval with live market-data tools so users can ask questions such as:
+Example questions:
 
 - "What were Nvidia's main supply chain risks in its FY2025 10-K?"
 - "What is Apple's current stock price and P/E ratio?"
 - "Compare Nvidia's FY2025 gross margin with its current valuation."
 
 The core idea is simple: **RAG handles historical filing knowledge, MCP handles live market data, and the agent decides when to use each source.**
+
+![Demo walkthrough](docs/assets/demo.gif)
+
+## Current Status
+
+This repo is a portfolio-grade MVP for SEC 10-K research over Apple, Microsoft, and Nvidia demo filings.
+
+Latest RAGAS quality gate:
+
+```text
+Faithfulness:      0.9297  target >= 0.80
+Answer Relevancy:  0.8600  target >= 0.75
+Context Recall:    0.6007
+Evaluated:         47
+Failed:            0
+```
+
+`context_recall` is still below 0.70, but the current failure analysis shows a mix of retrieval gaps, eval-set mismatch, unsupported valuation capabilities, and market-data availability limits rather than a simple generation prompt issue.
 
 ## Why RAG + MCP
 
@@ -27,25 +45,26 @@ This project uses both:
 
 ## Architecture
 
-```text
-User Query
-   |
-   v
-Query Router
-   |
-   +-- RAG_ONLY ------------------+
-   |                              |
-   v                              v
-Hybrid RAG Retriever        MCP Finance Tools
-BM25 + Vector + RRF         Polygon -> Alpha Vantage -> yfinance
-   |                              |
-   +--------------+---------------+
-                  |
-                  v
-          Analyst Orchestrator
-                  |
-                  v
-      Grounded answer with citations
+```mermaid
+flowchart TD
+    A[User Query] --> B[Query Router]
+    B -->|RAG_ONLY| C[Hybrid RAG Retriever]
+    B -->|MCP_ONLY| D[MCP Finance Tools]
+    B -->|HYBRID| C
+    B -->|HYBRID| D
+
+    C --> C1[BM25 Keyword Search]
+    C --> C2[Dense Vector Search]
+    C1 --> C3[RRF Fusion + Finance Boost]
+    C2 --> C3
+
+    D --> D1[Polygon.io]
+    D1 --> D2[Alpha Vantage]
+    D2 --> D3[Optional yfinance fallback]
+
+    C3 --> E[Analyst Orchestrator]
+    D3 --> E
+    E --> F[Grounded Answer + Citations]
 ```
 
 ## Project Structure
@@ -66,6 +85,9 @@ BM25 + Vector + RRF         Polygon -> Alpha Vantage -> yfinance
 │   └── analyst.py             # RAG/MCP orchestration and answer synthesis
 ├── eval/
 │   └── ragas_eval.py          # RAGAS evaluation pipeline
+├── docs/
+│   ├── assets/demo.gif        # README demo walkthrough
+│   └── interview_notes.md     # Sprint 4 interview prep notes
 ├── tests/
 │   └── query_eval_set.json    # Labelled evaluation queries
 └── data/pdfs/                 # Demo SEC filing PDFs
@@ -118,14 +140,21 @@ This keeps the system efficient and makes the data-source boundary explicit.
 - **Evaluation**: RAGAS
 - **PDF parsing**: pdfplumber
 
-## Setup
+## Quickstart
+
+These steps assume the local conda environment described in `AGENTS.md`:
 
 ```bash
 conda activate finance_rag
+```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-Create a local `.env` file:
+Create `.env` in the repo root:
 
 ```bash
 OPENAI_API_KEY=your_openai_key
@@ -134,27 +163,89 @@ ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
 ENABLE_YFINANCE_FALLBACK=false
 ```
 
-## Run the App
-
-```bash
-streamlit run app.py
-```
-
-## Ingest Demo Filings
+Ingest the bundled demo filings:
 
 ```bash
 python rag/ingest.py
 ```
 
-This parses the PDF filings in `data/pdfs/`, chunks them, embeds them, and stores the vectors in local ChromaDB at `data/chroma/`.
+Run the Streamlit app:
 
-## Run Evaluation
+```bash
+streamlit run app.py
+```
+
+Open the local Streamlit URL shown in the terminal, select a company/year in the sidebar, and ask a query.
+
+## Demo Flow
+
+1. Select a company in the sidebar: `AAPL`, `MSFT`, or `NVDA`.
+2. Select a fiscal year from the available SEC filings.
+3. Click `Download & Ingest` if the filing has not been indexed yet.
+4. Ask a question in the chat box.
+5. Inspect the response, query type, filing citations, and live market-data outputs.
+
+Good demo queries:
+
+```text
+What was Apple's total net sales in fiscal year 2024?
+What were Nvidia's main risk factors in its latest 10-K?
+What is Apple's current stock price?
+Compare Apple's reported revenue with its current valuation.
+```
+
+Expected behavior:
+
+- Filing questions should route to `RAG_ONLY` and cite SEC sections/pages.
+- Market-data questions should route to `MCP_ONLY` and show `data_source`.
+- Mixed questions should route to `HYBRID` and use both filing evidence and tool outputs.
+
+## Evaluation
+
+Run the full RAGAS harness:
 
 ```bash
 python eval/ragas_eval.py
 ```
 
-The evaluation set includes RAG-only, MCP-only, and hybrid finance questions.
+The harness writes aggregate and per-question artifacts to `eval/results/`:
+
+```text
+eval/results/ragas_*.json
+eval/results/ragas_details_*.json
+eval/results/ragas_details_*.csv
+```
+
+Per-question details include:
+
+- generated answer
+- expected answer
+- query type
+- retrieved context preview
+- retrieved context metadata
+- router decision
+- MCP tool outputs
+- faithfulness, answer relevancy, and context recall where applicable
+
+Latest recorded result:
+
+```text
+eval/results/ragas_20260504T073612.json
+```
+
+## Interview Notes
+
+Sprint 4 interview preparation notes are in:
+
+- [docs/interview_notes.md](docs/interview_notes.md)
+
+They cover:
+
+- structure-aware chunking
+- hybrid retrieval rationale
+- MCP vs direct API calls
+- evaluation methodology
+- limitations and follow-up roadmap
 
 ## Current Scope
 
@@ -168,3 +259,10 @@ The current project is a portfolio-grade MVP focused on:
 - RAGAS-based evaluation
 
 Future improvements include broader SEC filing support, stronger table extraction, multi-company hybrid comparison, and production-grade MCP tool coverage.
+
+## Known Limitations
+
+- Multi-company HYBRID comparison is not fully implemented yet.
+- Some valuation questions are marked as `unsupported_capability` because they require a valuation model or peer/segment valuation framework.
+- Some MCP fields depend on free-tier API coverage and may return structured unavailable responses.
+- `yfinance` is an optional last-resort fallback and is disabled by default to avoid rate-limit noise during evaluation.

@@ -30,6 +30,59 @@ CIK_MAP: dict[str, str] = {
 HEADERS = {"User-Agent": "tristan890620@gmail.com"}
 
 
+def _extract_html_tables(soup: BeautifulSoup) -> list[str]:
+    """
+    Extract SEC HTML tables as tab-separated text.
+
+    Financial tables must stay intact because line items, fiscal years, and
+    values lose meaning when generic HTML text extraction flattens them.
+    """
+    financial_terms = (
+        "total net sales",
+        "net sales",
+        "net income",
+        "gross margin",
+        "consolidated statements",
+        "products and services performance",
+        "segment operating performance",
+    )
+    extracted: list[str] = []
+
+    for table in soup.find_all("table"):
+        rows = []
+        for row in table.find_all("tr"):
+            cells = [
+                cell.get_text(" ", strip=True)
+                for cell in row.find_all(["th", "td"])
+            ]
+            cells = [cell for cell in cells if cell]
+            if cells:
+                rows.append("\t".join(cells))
+
+        table_text = "\n".join(rows).strip()
+        if not table_text:
+            continue
+
+        table_lower = table_text.lower()
+        if any(term in table_lower for term in financial_terms):
+            extracted.append(table_text)
+
+    return extracted
+
+
+def _table_pages(tables: list[str], start_page: int) -> list[dict]:
+    """Represent extracted HTML tables as pseudo-pages for the chunker."""
+    pages = []
+    for i, table in enumerate(tables, start=start_page):
+        first_line = table.splitlines()[0] if table.splitlines() else "Extracted financial table"
+        pages.append({
+            "page_number": i,
+            "text": f"Item 8. Financial Statements and Supplementary Data\nExtracted financial table\n{first_line}",
+            "tables": [table],
+        })
+    return pages
+
+
 # ---------------------------------------------------------------------------
 # Step 1: Get filing list from SEC EDGAR
 # ---------------------------------------------------------------------------
@@ -85,6 +138,7 @@ def download_and_parse(ticker: str, accession: str, primary_doc: str) -> list[di
     for tag in soup(["script", "style", "ix:header", "ix:hidden"]):
         tag.decompose()
 
+    extracted_tables = _extract_html_tables(soup)
     raw_text = soup.get_text(separator="\n")
 
     lines = []
@@ -109,6 +163,7 @@ def download_and_parse(ticker: str, accession: str, primary_doc: str) -> list[di
             "text": clean_text[start:start + chunk_size],
             "tables": [],
         })
+    pages.extend(_table_pages(extracted_tables, len(pages) + 1))
     return pages
 
 

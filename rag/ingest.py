@@ -71,8 +71,22 @@ _CHROMA_CLIENT = get_chroma_client()
 
 def upsert_to_chroma(chunks, embeddings: list[list[float]], collection_name: str = "sec_filings") -> None:
     collection = _CHROMA_CLIENT.get_or_create_collection(collection_name)
+
+    if chunks:
+        first_metadata = chunks[0].metadata
+        replace_filter = {
+            "$and": [
+                {"ticker": first_metadata["ticker"]},
+                {"fiscal_year": first_metadata["fiscal_year"]},
+                {"filing_type": first_metadata["filing_type"]},
+            ]
+        }
+        collection.delete(where=replace_filter)
     
-    ids = [f"{c.metadata['ticker']}_{c.metadata['fiscal_year']}_{i}" for i, c in enumerate(chunks)]
+    ids = [
+        f"{c.metadata['ticker']}_{c.metadata['filing_type']}_{c.metadata['fiscal_year']}_{i}"
+        for i, c in enumerate(chunks)
+    ]
     texts = [c.text for c in chunks]
     metadatas = [c.metadata for c in chunks]
     
@@ -94,7 +108,7 @@ def ingest_filing(pdf_path: str, ticker: str, filing_type: str, fiscal_year: str
 
 if __name__ == "__main__":
     filings = [
-        ("data/pdfs/AAPL_10K_2025.pdf", "AAPL", "10-K", "2024"),
+        ("data/pdfs/AAPL_10K_2025.pdf", "AAPL", "10-K", "2025"),
         ("data/pdfs/MSFT_10K_2025.pdf", "MSFT", "10-K", "2025"),
         ("data/pdfs/NVDA_10K_2025.pdf", "NVDA", "10-K", "2025"),
     ]
