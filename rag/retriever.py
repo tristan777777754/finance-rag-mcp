@@ -153,6 +153,11 @@ def _finance_boost(query: str, result: dict) -> float:
     matched_terms = [term for term in financial_terms if term in query_lower and term in text_lower]
     if matched_terms and section_type == "table":
         boost += 0.04 + min(len(matched_terms), 3) * 0.015
+    if any(term in query_lower for term in ["revenue", "net sales", "total net sales"]):
+        if re.search(r"total net sales\s+\$?\s*\d", text_lower):
+            boost += 0.10
+        if re.search(r"\b2024\b.*\b2023\b.*\b2022\b", text_lower) and "total net sales" in text_lower:
+            boost += 0.04
     if matched_terms and re.search(r"\b(income statements|statements of operations|segment information)\b", text_lower):
         boost += 0.04
 

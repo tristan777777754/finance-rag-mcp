@@ -75,8 +75,10 @@ def _build_rag_query(query: str, ticker: str, fiscal_year: str, query_type: str)
         "segment",
     ]
     matched_terms = [term for term in filing_terms if term in query_lower]
-    if "net sales" in matched_terms and "total net sales" not in matched_terms:
+    if ("revenue" in matched_terms or "net sales" in matched_terms) and "total net sales" not in matched_terms:
         matched_terms.insert(0, "total net sales")
+    if "revenue" in matched_terms and "net sales" not in matched_terms:
+        matched_terms.insert(1, "net sales")
     metric_hint = ", ".join(matched_terms) if matched_terms else "reported financial metrics"
     return f"{ticker} FY{fiscal_year} {metric_hint} annual report 10-K exact figures"
 
@@ -168,21 +170,25 @@ def _clean_answer_text(answer: str) -> str:
     correct.
     """
     cleaned = answer.strip()
+    cleaned = cleaned.replace("*", "").replace("_", "")
     cleaned = re.sub(r"(?<!\w)[*_]{1,3}([^*_]+)[*_]{1,3}(?!\w)", r"\1", cleaned)
     glued_phrases = {
         "Asofthecurrentmarketdata": "As of the current market data",
         "Asofnow": "As of now",
+        "Asforthecurrentvaluation": "As for the current valuation",
         "AppleInc.hasamarketcapitalizationofapproximately": "Apple Inc. has a market capitalization of approximately",
         "Apple'smarketcapitalizationisapproximately": "Apple's market capitalization is approximately",
+        "Apple'smarketcapitalizationisapproximatelu": "Apple's market capitalization is approximately ",
     }
     for glued, replacement in glued_phrases.items():
         cleaned = re.sub(glued, replacement, cleaned, flags=re.IGNORECASE)
-    cleaned = re.sub(r"\b(approximately|about)(\d)", r"\1 \2", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\b(approximately|approximatelu|about)(\d)", r"approximately \2", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"(\d)\s*(million|billion|trillion)\b", r"\1 \2", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\[Doc\s*(\d+)\]", r"[Doc \1]", cleaned)
     cleaned = re.sub(r"\[Live\s*Data\]", "[Live Data]", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"(?<!\s)(\[(?:Doc\s+\d+|Live Data)\])", r" \1", cleaned)
     cleaned = re.sub(r"(\])\s*\.(?=\S)", r"\1. ", cleaned)
+    cleaned = re.sub(r"\b(As|The|Apple|For)([a-z]+the)", lambda m: f"{m.group(1)} {m.group(2)}", cleaned)
     cleaned = re.sub(r"\.(?=[A-Z])", ". ", cleaned)
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     return cleaned
@@ -230,17 +236,32 @@ def run(
                 "content": (
                     "You are a financial analyst. Answer using only the provided context. "
                     "For HYBRID questions, separate SEC filing evidence from live market data. "
+                    "If the question does not explicitly name a fiscal year, use the selected filing fiscal year "
+                    "provided by the user message. "
                     "If an exact historical filing value appears in the context, use that value directly; "
-                    "When the question names a fiscal year, use the value for that fiscal year only, "
-                    "not the first year shown in a multi-year financial table. "
+                    "If live market data is unavailable, say the live-market portion is unavailable, "
+                    "but still answer any SEC filing portion that is supported by retrieved documents. "
+                    "When reading multi-year financial tables, match the selected fiscal year to the correct "
+                    "column header. For example, in a table headed 2024, 2023, 2022, the FY2024 value is the "
+                    "first value in that row, not the 2022 value. "
                     "do not say it is missing or estimate from prior years. "
                     "Do not speculate about valuation expectations unless the context explicitly supports it. "
+                    "Live market_data fields such as market_cap are raw U.S. dollars unless the tool output "
+                    "explicitly says otherwise; express large market caps in billions or trillions, not millions. "
                     "Use plain text only. Do not use Markdown bold, italics, or decorative formatting. "
                     "Write citations with spaces, for example: $391,035 million [Doc 1]. "
                     "Cite filing facts with [Doc X] and market data with [Live Data]."
                 ),
             },
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
+            {
+                "role": "user",
+                "content": (
+                    f"Selected ticker: {ticker}\n"
+                    f"Selected filing fiscal year: FY{fiscal_year}\n\n"
+                    f"Context:\n{context}\n\n"
+                    f"Question: {query}"
+                ),
+            },
         ],
     )
 

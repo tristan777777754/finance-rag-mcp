@@ -10,11 +10,11 @@
 - 專案名稱：Stock Research AI Assistant
 - 核心架構：RAG + MCP + Streamlit
 - 目前主要目標：建立可展示的股票研究 AI 助理，能結合 SEC filing context 與 live market data 回答問題
+- 目前最新工作重點：S5-01 Dockerize Streamlit demo 已完成；下一步做 S5-02 Azure Container Apps deployment notes
 - 目前 branch：`ragas-harness-fixes`
-- 最新 pushed commit：`61fa12e Improve RAGAS harness and financial table retrieval`
-- GitHub branch 已 push：`origin/ragas-harness-fixes`
-- PR 可從這裡建立：
-  - https://github.com/tristan777777754/finance-rag-mcp/pull/new/ragas-harness-fixes
+- 最新 pushed main commit：`61bf15c Polish Streamlit demo and document Azure roadmap`
+- GitHub `main` 已包含目前 demo 修復、文件更新與 Azure roadmap
+- 本機 branch 可能仍在 `ragas-harness-fixes`，但最新成果已直接 push 到 `origin/main`
 
 ---
 
@@ -153,6 +153,103 @@ data_unavailable
 
 ## Recent Fix Summary
 
+### Latest Dockerization / Demo Fixes — 2026-05-12
+
+本輪完成 `S5-01 Dockerize Streamlit Demo` 的主要工作：
+
+- 新增 `Dockerfile`
+  - 使用 `python:3.12-slim`
+  - 安裝 Streamlit / RAG / Chroma / FastMCP 所需 runtime packages
+  - 啟動指令為 `streamlit run app.py`
+  - 對外 expose `8501`
+
+- 新增 `.dockerignore`
+  - 排除 `.env`、`data/chroma/`、`graphify-out/`、cache、venv、logs
+  - 避免 secrets 和大型 generated artifacts 被打進 image
+
+- 更新 `requirements.txt`
+  - 新增 `openai==1.59.7`
+    - 原因：`agent/analyst.py` 使用 `from openai import OpenAI`，本機 conda 有但 Docker image 原本沒有
+  - 新增 `torch==2.5.1`
+    - 原因：避免 Docker build 解析到新版 `torch 2.11` 並下載大量 CUDA / Nvidia packages
+  - pin `pydantic==2.10.6`、`pydantic-settings==2.8.1`
+    - 原因：`fastmcp==2.3.4` 與較新的 `pydantic 2.13+ / pydantic-settings 2.14+` 不相容，會在 import 時噴：
+      ```text
+      TypeError: cannot specify both default and default_factory
+      ```
+
+- 修正 Docker / local CLI 問題
+  - `/usr/local/bin/docker` 和 `docker-credential-osxkeychain` 原本指到不存在的 OrbStack path
+  - 已改回 Docker Desktop：
+    ```text
+    /Applications/Docker.app/Contents/Resources/bin/docker
+    /Applications/Docker.app/Contents/Resources/bin/docker-credential-osxkeychain
+    ```
+
+- 修正 `.env` 的 Polygon key 問題
+  - `POLYGON_API_KEY` 原本在 `=` 後多一個空白：
+    ```text
+    POLYGON_API_KEY= nQP...
+    ```
+  - Docker `--env-file` 會保留這個空白，導致 Polygon 回：
+    ```text
+    401 Unknown API Key
+    ```
+  - 移除空白後 Polygon API 測試成功：
+    ```text
+    AAPL price: 292.68
+    data_source: polygon
+    market_cap: 4308095261920.0
+    pe_ratio: 39.23
+    ```
+
+- 改善 HYBRID demo answer
+  - `agent/analyst.py`
+    - 如果 HYBRID 問題沒有明確年份，會把 sidebar selected fiscal year 放進 prompt
+    - 明確要求多年度表格要對準欄位，例如 `2024, 2023, 2022` 中 FY2024 要取第一欄
+    - 如果 live market data unavailable，仍要回答 SEC filing 可支撐的部分
+    - 清理模型輸出中的 Markdown `*` / `_` 與黏字問題，避免 Streamlit 顯示怪斜體
+    - 讓 large market cap 以 billion/trillion 表達，不要錯寫成 millions
+  - `rag/retriever.py`
+    - 對 revenue / net sales / total net sales 查詢，boost 含數字的 `Total net sales` table chunk
+    - 避免「reported revenue」問句沒抓到 Apple 10-K 的正式欄位 `total net sales`
+
+目前 Docker demo 驗證狀態：
+
+```text
+docker build -t stock-research-ai .  # pass
+http://localhost:8501                # HTTP 200 OK
+fastmcp import                       # pass
+agent.analyst import                 # pass
+Polygon MCP tool                     # pass, data_source=polygon
+HYBRID revenue + valuation smoke     # pass
+```
+
+最後一次 HYBRID smoke test 期望回答形態：
+
+```text
+For FY2024, Apple's total net sales reported are $391,035 million [Doc 3].
+
+Currently, Apple's market capitalization is approximately $4.31 trillion [Live Data].
+
+This comparison shows the company's revenue relative to its market valuation.
+```
+
+Docker demo 建議啟動指令：
+
+```bash
+docker build -t stock-research-ai .
+
+docker run --rm -d \
+  --name stock-research-ai-demo \
+  --env-file .env \
+  -p 8501:8501 \
+  -v /Users/tristan/finance_rag_mcp/data/chroma:/app/data/chroma \
+  stock-research-ai
+```
+
+注意：目前建議把 `data/chroma` bind mount 進 container。否則用 `--rm` 起新 container 時，Chroma collection 可能不存在，需要重新 ingest。這是本地 Docker demo 的合理折衷；上 Azure 前要在 deployment notes 裡明確說明第一版仍使用 container-local / mounted local Chroma，不是 Azure AI Search。
+
 最近一次 RAGAS 修復主要改了：
 
 - `rag/chunker.py`
@@ -248,24 +345,52 @@ gh auth login -h github.com
 ## Recommended Next Sprint Direction
 
 建議現在不要繼續硬刷 RAGAS accuracy。  
-目前應該進下一個 sprint，把產品 demo 做完整。
+Streamlit RAG / MCP / HYBRID demo 已可展示，Dockerized local demo 也已完成。下一步應進 Azure deployment foundation。
 
 下一步優先順序：
 
-1. Streamlit end-to-end query flow
-   - user query
-   - router
-   - RAG / MCP / HYBRID execution
-   - synthesized answer
-   - citation panel
+1. S5-02 Prepare Azure Container Apps deployment notes
+   - 新增 `deploy/azure-container-apps.md`
+   - 記錄 image build、ACR push、Container Apps 建立、env vars / secrets 設定
+   - 第一版只部署目前 Dockerized Streamlit UI，不要先改 Azure AI Search
+   - 文件要清楚說明第一版限制：
+     - Chroma 仍是 local/container filesystem，不是 managed search
+     - container restart / redeploy 可能需要重新 ingest 或掛 persistent volume
+     - 需要有效 `OPENAI_API_KEY`、`POLYGON_API_KEY`
+     - `ALPHA_VANTAGE_API_KEY` optional but recommended fallback
+   - 本地驗收指令：
+     ```bash
+     docker build -t stock-research-ai .
+     docker run --rm -d \
+       --name stock-research-ai-demo \
+       --env-file .env \
+       -p 8501:8501 \
+       -v /Users/tristan/finance_rag_mcp/data/chroma:/app/data/chroma \
+       stock-research-ai
+     ```
+   - 驗收畫面：
+     - `http://localhost:8501` 可以開啟
+     - AAPL FY2024 net sales 問題回 `$391,035 million`
+     - MCP current price 題有 `data_source`
+     - HYBRID 題同時顯示 filing citation 與 live market data
 
-2. Citation rendering
-   - RAG citation：section + page number
-   - MCP citation：data_source + ticker + timestamp if available
+2. S5-03 Deploy Streamlit UI to Azure Container Apps
+   - 建立 Azure Container Registry
+   - Push `stock-research-ai` image
+   - 建立 Azure Container App
+   - 設定 secrets/env vars
+   - 拿到 public demo URL
+   - 用 public URL 測三題：
+     ```text
+     What was Apple's total net sales in fiscal year 2024?
+     What is Apple's current stock price?
+     Compare Apple's reported revenue with its current valuation.
+     ```
 
-3. HYBRID response quality
-   - 清楚分開 filing evidence 與 live market data
-   - 避免超出 context 的 valuation speculation
+3. S6 Split / deploy MCP server separately
+   - 在 UI container 穩定後，再把 MCP finance server 拆成第二個 container app
+   - UI 透過 env var 指向 MCP endpoint
+   - 所有 MCP response 仍需包含 `data_source`
 
 4. Follow-up accuracy ticket
    - target：context recall > 0.70
@@ -305,6 +430,41 @@ MCP 把 market data access 做成 structured tools，讓資料來源、schema、
 
 ## Useful Commands
 
+Run Dockerized Streamlit demo:
+
+```bash
+docker build -t stock-research-ai .
+
+docker stop stock-research-ai-demo 2>/dev/null || true
+
+docker run --rm -d \
+  --name stock-research-ai-demo \
+  --env-file .env \
+  -p 8501:8501 \
+  -v /Users/tristan/finance_rag_mcp/data/chroma:/app/data/chroma \
+  stock-research-ai
+```
+
+Check Docker demo health:
+
+```bash
+curl -I http://localhost:8501
+docker logs --tail 80 stock-research-ai-demo
+docker exec stock-research-ai-demo python -c "from rag.chroma_client import get_chroma_client; print(get_chroma_client().get_collection('sec_filings').count())"
+```
+
+Smoke test MCP tools in Docker:
+
+```bash
+docker exec stock-research-ai-demo python -c "from tools.stock_server import get_stock_price, get_fundamentals; print(get_stock_price('AAPL')); print(get_fundamentals('AAPL'))"
+```
+
+Smoke test HYBRID answer in Docker:
+
+```bash
+docker exec stock-research-ai-demo python -c "from agent.analyst import run; result=run(\"Compare Apple's reported revenue with its current valuation.\", ticker='AAPL', fiscal_year='2024'); print(result['answer'])"
+```
+
 Run full evaluation:
 
 ```bash
@@ -339,4 +499,9 @@ git status -sb
 2. 再讀 `AGENTS.md`
 3. 再讀本檔 `MEMORY.md`
 4. 若任務是 accuracy/eval，先看最新 `eval/results/ragas_details_*.json`
-5. 若任務是產品開發，優先從 Streamlit end-to-end citation flow 開始
+5. 若任務是產品開發，下一步優先做 `S5-02 deploy/azure-container-apps.md`
+6. 不要直接跳 Azure AI Search / Blob Storage；先把目前 Dockerized Streamlit demo 部署到 Azure Container Apps，拿到 public demo URL
+7. 如果 Docker demo 又出現 market data unavailable，先檢查 `.env`：
+   - `POLYGON_API_KEY` 不可有前後空白
+   - Docker `--env-file` 會保留 `=` 後面的空白
+   - 用 `docker exec` 測 `get_stock_price('AAPL')` 是否回 `data_source='polygon'`
