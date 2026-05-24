@@ -16,6 +16,14 @@ The core idea is simple: **RAG handles historical filing knowledge, MCP handles 
 
 This repo is a portfolio-grade MVP for SEC 10-K research over Apple, Microsoft, and Nvidia demo filings.
 
+Current deployment status:
+
+```text
+Local Docker demo: verified
+Azure Container Apps demo: deployed and verified
+Azure backend migration: not started yet
+```
+
 Latest RAGAS quality gate:
 
 ```text
@@ -176,6 +184,34 @@ streamlit run app.py
 ```
 
 Open the local Streamlit URL shown in the terminal, select a company/year in the sidebar, and ask a query.
+
+## Docker and Azure Deployment
+
+Build and run the Dockerized demo locally:
+
+```bash
+docker build -t stock-research-ai .
+
+docker run --rm -d \
+  --name stock-research-ai-demo \
+  --env-file .env \
+  -p 8501:8501 \
+  -v /Users/tristan/finance_rag_mcp/data/chroma:/app/data/chroma \
+  stock-research-ai
+```
+
+The first Azure deployment target is Azure Container Apps running the current Streamlit demo. See [deploy/azure-container-apps.md](deploy/azure-container-apps.md) for the ACR build, Container Apps creation, secrets, environment variables, verification, and known limitations.
+
+The first Azure demo has been deployed with:
+
+```text
+Azure Container Registry: tristanragmcp2026.azurecr.io
+Azure Container App: stock-research-ui
+Container Apps Environment: cae-stock-research-demo
+Resource Group: rg-stock-research-demo
+```
+
+Important first-version limitation: ChromaDB is still local/container filesystem storage, not Azure AI Search yet. This is acceptable for the first public demo URL, but production retrieval should move to Azure AI Search so hybrid search, metadata filters, and citation behavior remain reliable across restarts and replicas.
 
 ## Demo Flow
 

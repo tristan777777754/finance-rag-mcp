@@ -10,11 +10,12 @@
 - 專案名稱：Stock Research AI Assistant
 - 核心架構：RAG + MCP + Streamlit
 - 目前主要目標：建立可展示的股票研究 AI 助理，能結合 SEC filing context 與 live market data 回答問題
-- 目前最新工作重點：S5-01 Dockerize Streamlit demo 已完成；下一步做 S5-02 Azure Container Apps deployment notes
+- 目前最新工作重點：S5-03 Azure Container Apps public demo 已部署成功；下一步做 S5-04 secrets/config hardening 或 S6 MCP server split
 - 目前 branch：`ragas-harness-fixes`
-- 最新 pushed main commit：`61bf15c Polish Streamlit demo and document Azure roadmap`
-- GitHub `main` 已包含目前 demo 修復、文件更新與 Azure roadmap
-- 本機 branch 可能仍在 `ragas-harness-fixes`，但最新成果已直接 push 到 `origin/main`
+- 最新 Azure demo resource group：`rg-stock-research-demo`
+- Azure Container Registry：`tristanragmcp2026.azurecr.io`
+- Azure Container App：`stock-research-ui`
+- Azure Container Apps Environment：`cae-stock-research-demo`
 
 ---
 
@@ -152,6 +153,68 @@ data_unavailable
 ---
 
 ## Recent Fix Summary
+
+### Latest Azure Deployment — 2026-05-24
+
+本輪完成 `S5-02` 與 `S5-03`：
+
+- 新增 `deploy/azure-container-apps.md`
+  - 記錄 Azure CLI setup、Resource Group、ACR、Container Apps Environment、Container App 建立流程
+  - 記錄 secrets / env vars 設定
+  - 明確說明第一版仍使用 container-local ChromaDB，不是 Azure AI Search
+  - 補上 ACR Tasks unavailable 時的 local Docker build + push fallback
+  - 補上 Container App 從 private ACR pull image 需要 registry credentials
+
+- Azure 基礎資源已建立
+  - Resource Group：`rg-stock-research-demo`
+  - ACR：`tristanragmcp2026`
+  - ACR login server：`tristanragmcp2026.azurecr.io`
+  - Container Apps Environment：`cae-stock-research-demo`
+  - Container App：`stock-research-ui`
+
+- Docker image 已 push 到 ACR
+  ```text
+  tristanragmcp2026.azurecr.io/stock-research-ai:s5-demo
+  ```
+
+- Public Azure demo 已驗證
+  - Streamlit UI 可由 Azure Container Apps public URL 開啟
+  - AAPL FY2024 filing 可完成 `Download & Ingest`
+  - RAG_ONLY 問題驗證成功：
+    ```text
+    What was Apple's total net sales in fiscal year 2024?
+    ```
+    回答包含：
+    ```text
+    Apple's total net sales in fiscal year 2024 were $391,035 million [Doc 1].
+    ```
+
+- 實際部署時踩到的坑
+  - `az acr build` 回：
+    ```text
+    TasksOperationsNotAllowed
+    ```
+    解法：改用 local Docker build，再 `docker push` 到 ACR。
+  - 第一次建立 Container App 時出現：
+    ```text
+    UNAUTHORIZED: authentication required
+    ```
+    解法：建立 app 時加上 `--registry-server`、`--registry-username`、`--registry-password`。
+  - Container App 預設 `0.5 CPU / 1Gi memory` 對 SEC ingest + sentence-transformers embedding 太小，按 `Download & Ingest` 可能中途重啟。
+    解法：更新到至少：
+    ```bash
+    az containerapp update \
+      --name stock-research-ui \
+      --resource-group rg-stock-research-demo \
+      --cpu 1.0 \
+      --memory 2Gi
+    ```
+
+目前 Azure demo 的合理說法：
+
+```text
+I containerized the Streamlit RAG + MCP app, pushed the image to Azure Container Registry, deployed it to Azure Container Apps, configured secrets and environment variables, and verified a public demo URL with a real SEC filing query.
+```
 
 ### Latest Dockerization / Demo Fixes — 2026-05-12
 
@@ -345,54 +408,22 @@ gh auth login -h github.com
 ## Recommended Next Sprint Direction
 
 建議現在不要繼續硬刷 RAGAS accuracy。  
-Streamlit RAG / MCP / HYBRID demo 已可展示，Dockerized local demo 也已完成。下一步應進 Azure deployment foundation。
+Streamlit RAG / MCP / HYBRID demo 已可展示，Dockerized local demo 與第一版 Azure Container Apps public demo 都已完成。下一步應做 Azure deployment hardening，而不是立刻重寫 RAG。
 
 下一步優先順序：
 
-1. S5-02 Prepare Azure Container Apps deployment notes
-   - 新增 `deploy/azure-container-apps.md`
-   - 記錄 image build、ACR push、Container Apps 建立、env vars / secrets 設定
-   - 第一版只部署目前 Dockerized Streamlit UI，不要先改 Azure AI Search
-   - 文件要清楚說明第一版限制：
-     - Chroma 仍是 local/container filesystem，不是 managed search
-     - container restart / redeploy 可能需要重新 ingest 或掛 persistent volume
-     - 需要有效 `OPENAI_API_KEY`、`POLYGON_API_KEY`
-     - `ALPHA_VANTAGE_API_KEY` optional but recommended fallback
-   - 本地驗收指令：
-     ```bash
-     docker build -t stock-research-ai .
-     docker run --rm -d \
-       --name stock-research-ai-demo \
-       --env-file .env \
-       -p 8501:8501 \
-       -v /Users/tristan/finance_rag_mcp/data/chroma:/app/data/chroma \
-       stock-research-ai
-     ```
-   - 驗收畫面：
-     - `http://localhost:8501` 可以開啟
-     - AAPL FY2024 net sales 問題回 `$391,035 million`
-     - MCP current price 題有 `data_source`
-     - HYBRID 題同時顯示 filing citation 與 live market data
+1. S5-04 Azure deployment hardening
+   - 確認 Container App secrets/env vars 都在 Azure Portal 可見且沒有 key 進 repo
+   - 記錄目前 Container App CPU / memory 設定
+   - 補 README 的 Azure deployment status
+   - 視需要加 Azure Files 或明確標註 container restart 後需重新 ingest
 
-2. S5-03 Deploy Streamlit UI to Azure Container Apps
-   - 建立 Azure Container Registry
-   - Push `stock-research-ai` image
-   - 建立 Azure Container App
-   - 設定 secrets/env vars
-   - 拿到 public demo URL
-   - 用 public URL 測三題：
-     ```text
-     What was Apple's total net sales in fiscal year 2024?
-     What is Apple's current stock price?
-     Compare Apple's reported revenue with its current valuation.
-     ```
-
-3. S6 Split / deploy MCP server separately
+2. S6 Split / deploy MCP server separately
    - 在 UI container 穩定後，再把 MCP finance server 拆成第二個 container app
    - UI 透過 env var 指向 MCP endpoint
    - 所有 MCP response 仍需包含 `data_source`
 
-4. Follow-up accuracy ticket
+3. Follow-up accuracy ticket
    - target：context recall > 0.70
    - 方法：
      - parent-child retrieval
@@ -500,8 +531,9 @@ git status -sb
 3. 再讀本檔 `MEMORY.md`
 4. 若任務是 accuracy/eval，先看最新 `eval/results/ragas_details_*.json`
 5. 若任務是產品開發，下一步優先做 `S5-02 deploy/azure-container-apps.md`
-6. 不要直接跳 Azure AI Search / Blob Storage；先把目前 Dockerized Streamlit demo 部署到 Azure Container Apps，拿到 public demo URL
+6. 目前 `S5-02` / `S5-03` 已完成；不要直接跳 Azure AI Search / Blob Storage，下一步先做 Azure hardening 或 MCP split
 7. 如果 Docker demo 又出現 market data unavailable，先檢查 `.env`：
    - `POLYGON_API_KEY` 不可有前後空白
    - Docker `--env-file` 會保留 `=` 後面的空白
    - 用 `docker exec` 測 `get_stock_price('AAPL')` 是否回 `data_source='polygon'`
+8. 如果 Azure UI ingest 卡住或 container restart，先檢查 Container App resources，至少用 `1 CPU / 2Gi memory`
