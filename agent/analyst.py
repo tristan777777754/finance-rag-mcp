@@ -12,7 +12,8 @@ Flow:
 from __future__ import annotations
 from openai import OpenAI
 from dotenv import load_dotenv
-import sys, os
+import os
+import sys
 import re
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -21,7 +22,6 @@ from rag.chroma_client import get_chroma_client
 from rag.retriever import build_bm25_index, hybrid_search
 from tools.stock_server import (
     get_earnings_calendar,
-    get_financials,
     get_fundamentals,
     get_peers,
     get_sec_filings_list,

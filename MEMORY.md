@@ -432,30 +432,7 @@ Streamlit RAG / MCP / HYBRID demo 已可展示，Dockerized local demo 與第一
      - adaptive top_k
      - eval set expected-answer cleanup
 
----
 
-## Interview Talking Points
-
-### Why table-aware chunking?
-
-Fixed-size chunking 會切斷 financial tables，讓年份、line items 和數字分離。  
-在財務 RAG 裡，這會直接造成 numeric answer 錯誤或 retrieval recall 下降。
-
-### Why hybrid search?
-
-Vector search 擅長語意，但財報查詢常需要 exact match。  
-BM25 對 `Item 1A`, `gross margin`, `net income`, `Greater China` 這類查詢更可靠。  
-RRF 可以融合兩者。
-
-### Why MCP instead of direct API calls inside prompt?
-
-MCP 把 market data access 做成 structured tools，讓資料來源、schema、fallback、error handling 更可控。  
-這比把 API response 隨便塞進 prompt 更接近 production tool architecture。
-
-### Why mark unsupported questions?
-
-不是所有 eval 題都應該用 prompt 硬答。  
-如果題目需要尚未實作的 product capability，例如 valuation model 或 peer valuation，應該明確標記 unsupported，而不是讓模型猜。
 
 ---
 

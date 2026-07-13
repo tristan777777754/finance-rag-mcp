@@ -38,7 +38,8 @@ def chunk_filing(pages, ticker, filing_type, fiscal_year):
         page_tables = page.get("tables") or []
         is_table = _is_table_section(section) or _has_financial_table(page["text"], page_tables)
 
-        for table_index, table_text in enumerate(page_tables, start=1):
+        extracted_tables = [table_text for table_text in page_tables if table_text.strip()]
+        for table_index, table_text in enumerate(extracted_tables, start=1):
             if table_text.strip():
                 chunks.append(Chunk(
                     text=_format_table_chunk(page["text"], table_text, table_index),
@@ -47,10 +48,15 @@ def chunk_filing(pages, ticker, filing_type, fiscal_year):
                               "table_index": table_index},
                 ))
 
+        if extracted_tables:
+            # A complete extracted table is authoritative for this page.
+            # Do not also create narrative chunks that can repeat table rows.
+            continue
+
         if is_table:
-            # Whole page as one chunk — never split financial tables
+            # Keep the whole page only when extraction found no usable table.
             chunks.append(Chunk(
-                text=_format_page_with_tables(page["text"], page_tables),
+                text=_format_page_with_tables(page["text"], extracted_tables),
                 metadata={**base_meta, "page_number": page["page_number"],
                           "section": section, "section_type": "table"},
             ))

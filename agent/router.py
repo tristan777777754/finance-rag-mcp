@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
 import json
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -31,6 +30,23 @@ Q: "Who are Apple's competitors per their 10-K and what is its price?" -> HYBRID
 Return JSON only: {"query_type": "...", "reasoning": "..."}
 """
 
+VALID_QUERY_TYPES = frozenset({"RAG_ONLY", "MCP_ONLY", "HYBRID"})
+
+
+def _validate_classification(payload: object) -> dict:
+    """Validate the router contract before the analyst uses the result."""
+    if not isinstance(payload, dict):
+        raise ValueError("Router response must be a JSON object.")
+
+    query_type = payload.get("query_type")
+    reasoning = payload.get("reasoning")
+    if query_type not in VALID_QUERY_TYPES:
+        raise ValueError(f"Router returned invalid query_type: {query_type!r}")
+    if not isinstance(reasoning, str) or not reasoning.strip():
+        raise ValueError("Router response must include non-empty reasoning.")
+
+    return {"query_type": query_type, "reasoning": reasoning.strip()}
+
 
 def classify_query(query: str) -> dict:
     response = _CLIENT.chat.completions.create(
@@ -41,7 +57,11 @@ def classify_query(query: str) -> dict:
             {"role": "user", "content": f"Query: {query}"},
         ],
     )
-    return json.loads(response.choices[0].message.content)
+    try:
+        payload = json.loads(response.choices[0].message.content)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError("Router returned invalid JSON.") from exc
+    return _validate_classification(payload)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,106 @@
+{
+  "/Users/tristan/finance_rag_mcp/edgar.py": {
+    "mtime": 1778224805.605999,
+    "hash": "260bf8071a5405b2e2f33624c42ab83b"
+  },
+  "/Users/tristan/finance_rag_mcp/app.py": {
+    "mtime": 1778224805.6039453,
+    "hash": "74b498e3db1279d6006a5f06c2616e83"
+  },
+  "/Users/tristan/finance_rag_mcp/tools/stock_server.py": {
+    "mtime": 1777863932.9869306,
+    "hash": "2ac5c78203cbf448485b7d6e8aa616f8"
+  },
+  "/Users/tristan/finance_rag_mcp/tools/__init__.py": {
+    "mtime": 1777529973.314085,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/tristan/finance_rag_mcp/agent/__init__.py": {
+    "mtime": 1777529975.2152095,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/tristan/finance_rag_mcp/agent/analyst.py": {
+    "mtime": 1778224805.6034203,
+    "hash": "43894aedba28a200a71a0bb6e409b397"
+  },
+  "/Users/tristan/finance_rag_mcp/agent/router.py": {
+    "mtime": 1777632095.4078987,
+    "hash": "ec2edc7e30cc701a88b4f250d2c89f52"
+  },
+  "/Users/tristan/finance_rag_mcp/rag/ingest.py": {
+    "mtime": 1778224805.606308,
+    "hash": "89772eac7d29bca3a8ec558fe7b5a995"
+  },
+  "/Users/tristan/finance_rag_mcp/rag/chunker.py": {
+    "mtime": 1777872304.5314708,
+    "hash": "cb07c4e7045372e779e98dff08539ac0"
+  },
+  "/Users/tristan/finance_rag_mcp/rag/retriever.py": {
+    "mtime": 1778224805.6066875,
+    "hash": "506a38a3e34507d702521675a977fc61"
+  },
+  "/Users/tristan/finance_rag_mcp/rag/__init__.py": {
+    "mtime": 1777529970.9512968,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/tristan/finance_rag_mcp/rag/chroma_client.py": {
+    "mtime": 1777699393.4270256,
+    "hash": "622ad9e08c99f739b21f5f914c91803f"
+  },
+  "/Users/tristan/finance_rag_mcp/eval/ragas_eval.py": {
+    "mtime": 1777876795.1384435,
+    "hash": "6c7a56a89515932e15986c64a9268a07"
+  },
+  "/Users/tristan/finance_rag_mcp/eval/__init__.py": {
+    "mtime": 1777529977.5467305,
+    "hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "/Users/tristan/finance_rag_mcp/requirements.txt": {
+    "mtime": 1777593577.7899055,
+    "hash": "6431f60ef27757eb3911f91f43c82212"
+  },
+  "/Users/tristan/finance_rag_mcp/graphify-out/converted/stock_research_pm_report_27b1b1ea.md": {
+    "mtime": 1778309643.4615796,
+    "hash": "72a54d32060cc95e0b563a80d119c61b"
+  },
+  "/Users/tristan/finance_rag_mcp/README.md": {
+    "mtime": 1778224805.6013162,
+    "hash": "fd23615d624de30e9aa3e8a9974f0bc1"
+  },
+  "/Users/tristan/finance_rag_mcp/MEMORY.md": {
+    "mtime": 1778224936.1587837,
+    "hash": "a29e043ee3f85068efd77b3356a6e804"
+  },
+  "/Users/tristan/finance_rag_mcp/AGENTS.md": {
+    "mtime": 1777872044.3725576,
+    "hash": "111f501004067262664324fecf95fd65"
+  },
+  "/Users/tristan/finance_rag_mcp/docs/azure_deployment_report.md": {
+    "mtime": 1778224805.605287,
+    "hash": "26021b8be95924a91f521dfc9c12fb03"
+  },
+  "/Users/tristan/finance_rag_mcp/docs/interview_notes.md": {
+    "mtime": 1778224805.6056752,
+    "hash": "3a4238108906a37f6174386b8784e7b7"
+  },
+  "/Users/tristan/finance_rag_mcp/docs/azure_migration_schedule_report.md": {
+    "mtime": 1778307943.1688304,
+    "hash": "98aeb763fa7205704840fc101cc7ed70"
+  },
+  "/Users/tristan/finance_rag_mcp/data/pdfs/MSFT_10K_2025.pdf": {
+    "mtime": 1777530876.844849,
+    "hash": "1f9d4488b276a86f04a59d36a93489e8"
+  },
+  "/Users/tristan/finance_rag_mcp/data/pdfs/NVDA_10K_2025.pdf": {
+    "mtime": 1777530967.3957312,
+    "hash": "2d2b56269bec8850be936bf411144eaf"
+  },
+  "/Users/tristan/finance_rag_mcp/data/pdfs/AAPL_10K_2025.pdf": {
+    "mtime": 1777530607.9841473,
+    "hash": "989938a1d27a7f9b34d0f84e3edb6786"
+  },
+  "/Users/tristan/finance_rag_mcp/docs/assets/demo.gif": {
+    "mtime": 1778224805.6048932,
+    "hash": "d94c6fba3a67a28426f4309dbba4d61e"
+  }
+}

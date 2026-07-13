@@ -1,5 +1,6 @@
 import streamlit as st
-import sys, os
+import os
+import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from edgar import get_filings, ingest_from_edgar, CIK_MAP
