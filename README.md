@@ -1,5 +1,7 @@
 # Stock Research AI Assistant
 
+![CI](https://github.com/tristan777777754/stock-research-ai-assistant/actions/workflows/ci.yml/badge.svg?branch=main)
+
 A finance-domain AI assistant built around a **RAG + MCP architecture**. It combines SEC filing retrieval with live market-data tools so users can ask grounded stock research questions with citations.
 
 Example questions:
@@ -24,7 +26,7 @@ Azure Container Apps demo: deployed and verified
 Azure backend migration: not started yet
 ```
 
-Latest RAGAS quality gate:
+Latest RAGAS evaluation snapshot:
 
 ```text
 Faithfulness:      0.9297  target >= 0.80
@@ -35,6 +37,8 @@ Failed:            0
 ```
 
 `context_recall` is still below 0.70, but the current failure analysis shows a mix of retrieval gaps, eval-set mismatch, unsupported valuation capabilities, and market-data availability limits rather than a simple generation prompt issue.
+
+This snapshot is diagnostic evidence only; it is not a release gate.
 
 ## Why RAG + MCP
 
@@ -212,6 +216,24 @@ Resource Group: rg-stock-research-demo
 ```
 
 Important first-version limitation: ChromaDB is still local/container filesystem storage, not Azure AI Search yet. This is acceptable for the first public demo URL, but production retrieval should move to Azure AI Search so hybrid search, metadata filters, and citation behavior remain reliable across restarts and replicas.
+
+## CI and Immutable Release Artifact
+
+Every pull request to `main` and every `main` commit runs Ruff, deterministic offline finance-domain contract tests, a Docker build, and a Streamlit `/_stcore/health` check in GitHub Actions. The workflow does not use provider API keys or run live market-data calls.
+
+After the checks pass on `main`, the same health-checked image is published to GitHub Container Registry with one immutable Git-SHA tag:
+
+```text
+ghcr.io/tristan777777754/stock-research-ai:<git-sha>
+```
+
+There is no `latest` tag. After the package is made public in GitHub Packages, a specific verified image can be pulled with:
+
+```bash
+docker pull ghcr.io/tristan777777754/stock-research-ai:<git-sha>
+```
+
+This CI workflow creates a reproducible release artifact only; it does not deploy the application, add runtime monitoring, or make RAGAS a release-quality gate.
 
 ## Demo Flow
 
