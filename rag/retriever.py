@@ -9,7 +9,8 @@ Flow:
 """
 
 from __future__ import annotations
-import sys, os
+import os
+import sys
 import re
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -70,6 +71,7 @@ def bm25_search(
     query: str,
     chunks,
     bm25_index,
+    metadata_filter: dict | None = None,
     top_k: int = 20,
 ) -> list[dict]:
     """
@@ -81,12 +83,25 @@ def bm25_search(
     tokenized_query = query.lower().split()
     scores = bm25_index.get_scores(tokenized_query)
     
-    top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:top_k]
+    ranked_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+    top_indices = [
+        index for index in ranked_indices
+        if _matches_metadata(chunks[index].metadata, metadata_filter)
+    ][:top_k]
     
     return [
         {"text": chunks[i].text, "metadata": chunks[i].metadata, "score": scores[i]}
         for i in top_indices
     ]
+
+
+def _matches_metadata(metadata: dict, metadata_filter: dict | None) -> bool:
+    """Match the equality and $and filters used by ChromaDB retrieval."""
+    if not metadata_filter:
+        return True
+    if "$and" in metadata_filter:
+        return all(_matches_metadata(metadata, condition) for condition in metadata_filter["$and"])
+    return all(metadata.get(key) == value for key, value in metadata_filter.items())
 
 
 def reciprocal_rank_fusion(
@@ -185,7 +200,13 @@ def hybrid_search(
         List of top_k result dicts with text + metadata + rrf_score.
     """
     vector_results = vector_search(query, metadata_filter=metadata_filter, top_k=20)
-    bm25_results = bm25_search(query, chunks, bm25_index, top_k=20)
+    bm25_results = bm25_search(
+        query,
+        chunks,
+        bm25_index,
+        metadata_filter=metadata_filter,
+        top_k=20,
+    )
     fused = reciprocal_rank_fusion(vector_results, bm25_results)
     for result in fused:
         result["domain_boost"] = _finance_boost(query, result)
