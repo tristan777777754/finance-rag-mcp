@@ -12,15 +12,65 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
-
-env:
-  LOCAL_IMAGE: stock-research-ai:${{ github.sha }}
-  REMOTE_IMAGE: ghcr.io/tristan777777754/stock-research-ai:${{ github.sha }}
-  CONTAINER_NAME: stock-research-ai-ci
 
 jobs:
-  validate-and-publish:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      quality: ${{ steps.filter.outputs.quality }}
+      runtime: ${{ steps.filter.outputs.runtime }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Classify changed files
+        id: filter
+        uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590
+        with:
+          filters: |
+            quality:
+              - '.github/**'
+              - '.streamlit/**'
+              - 'agent/**'
+              - 'app.py'
+              - 'data/**'
+              - 'deploy/**'
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'edgar.py'
+              - 'eval/**'
+              - 'pyproject.toml'
+              - 'rag/**'
+              - 'requirements*.txt'
+              - 'tests/**'
+              - 'tools/**'
+            runtime:
+              - 'app.py'
+              - 'edgar.py'
+              - 'agent/**'
+              - 'rag/**'
+              - 'tools/**'
+              - '.streamlit/**'
+              - 'data/pdfs/**'
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'requirements.txt'
+              - '.github/workflows/ci.yml'
+
+  docs-only:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.quality != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Record documentation-only change
+        run: |
+          echo "Documentation-only change: runtime validation and image publication are not required."
+
+  quality:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.quality == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -46,6 +96,22 @@ jobs:
 
       - name: Run offline contract tests
         run: python -m pytest -q
+
+  validate-and-publish:
+    needs: [detect-changes, quality]
+    if: needs.detect-changes.outputs.runtime == 'true' && needs.quality.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      LOCAL_IMAGE: stock-research-ai:${{ github.sha }}
+      REMOTE_IMAGE: ghcr.io/tristan777777754/stock-research-ai:${{ github.sha }}
+      CONTAINER_NAME: stock-research-ai-ci
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Build container image
         run: |
