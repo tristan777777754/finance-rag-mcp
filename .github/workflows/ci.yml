@@ -56,7 +56,7 @@ jobs:
               - 'Dockerfile'
               - '.dockerignore'
               - 'requirements.txt'
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
 
   docs-only:
     needs: detect-changes
