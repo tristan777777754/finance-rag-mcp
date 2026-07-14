@@ -224,13 +224,13 @@ Every pull request to `main` and every `main` commit runs Ruff, deterministic of
 After the checks pass on `main`, the same health-checked image is published to GitHub Container Registry with one immutable Git-SHA tag:
 
 ```text
-ghcr.io/tristan777777754/stock-research-ai:<git-sha>
+ghcr.io/tristan777777754/stock-research-ai:72aa795419d975ac5251ee171c34a933dcb88f95
 ```
 
 There is no `latest` tag. After the package is made public in GitHub Packages, a specific verified image can be pulled with:
 
 ```bash
-docker pull ghcr.io/tristan777777754/stock-research-ai:<git-sha>
+docker pull ghcr.io/tristan777777754/stock-research-ai:72aa795419d975ac5251ee171c34a933dcb88f95
 ```
 
 This CI workflow creates a reproducible release artifact only; it does not deploy the application, add runtime monitoring, or make RAGAS a release-quality gate.
