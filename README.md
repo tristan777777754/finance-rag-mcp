@@ -217,23 +217,23 @@ Resource Group: rg-stock-research-demo
 
 Important first-version limitation: ChromaDB is still local/container filesystem storage, not Azure AI Search yet. This is acceptable for the first public demo URL, but production retrieval should move to Azure AI Search so hybrid search, metadata filters, and citation behavior remain reliable across restarts and replicas.
 
-## CI and Immutable Release Artifact
+## CI and Continuous Delivery
 
-Every pull request to `main` and every `main` commit runs Ruff, deterministic offline finance-domain contract tests, a Docker build, and a Streamlit `/_stcore/health` check in GitHub Actions. The workflow does not use provider API keys or run live market-data calls.
+Every pull request to `main` and every `main` commit runs deterministic offline finance-domain validation. Runtime changes run Ruff, contract tests, a Docker build, and a Streamlit `/_stcore/health` check; documentation-only changes complete through a fast CI path without building an image. The workflow does not use provider API keys or run live market-data calls.
 
-After the checks pass on `main`, the same health-checked image is published to GitHub Container Registry with one immutable Git-SHA tag:
+After runtime validation passes on `main`, the same health-checked image is published to GitHub Container Registry with one immutable Git-SHA tag:
 
 ```text
-ghcr.io/tristan777777754/stock-research-ai:72aa795419d975ac5251ee171c34a933dcb88f95
+ghcr.io/tristan777777754/stock-research-ai:<git-sha>
 ```
 
-There is no `latest` tag. After the package is made public in GitHub Packages, a specific verified image can be pulled with:
+There is no `latest` tag. A version tag such as `v0.1.0` must point to a runtime commit on `main` that already has its matching GHCR image. The release workflow pulls that exact image, verifies that its OCI revision label matches the tagged commit, repeats the Streamlit health check, and then creates a public GitHub Release with generated notes, the image digest, and a pull command.
 
 ```bash
-docker pull ghcr.io/tristan777777754/stock-research-ai:72aa795419d975ac5251ee171c34a933dcb88f95
+docker pull ghcr.io/tristan777777754/stock-research-ai:<git-sha>
 ```
 
-This CI workflow creates a reproducible release artifact only; it does not deploy the application, add runtime monitoring, or make RAGAS a release-quality gate.
+This provides Continuous Delivery: a Git tag, GitHub Release, commit SHA, and immutable image digest are traceable to one another. Hosted Continuous Deployment, runtime monitoring, and a RAGAS release-quality gate are intentionally not enabled.
 
 ## Demo Flow
 

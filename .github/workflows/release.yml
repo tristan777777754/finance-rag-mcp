@@ -1,0 +1,165 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing vX.Y.Z tag to verify without creating a release"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  verify-and-release:
+    runs-on: ubuntu-latest
+    env:
+      CONTAINER_NAME: stock-research-ai-release
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Resolve and validate release artifact
+        id: artifact
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          SEMVER_PATTERN='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?([+]([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if ! [[ "${RELEASE_TAG}" =~ ${SEMVER_PATTERN} ]]; then
+            echo "Release tag must use Semantic Versioning, for example v0.1.0."
+            exit 1
+          fi
+
+          if ! git show-ref --verify --quiet "refs/tags/${RELEASE_TAG}"; then
+            echo "Release tag ${RELEASE_TAG} does not exist."
+            exit 1
+          fi
+
+          if [ "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" != "tag" ]; then
+            echo "Release tag ${RELEASE_TAG} must be an annotated Git tag."
+            exit 1
+          fi
+
+          git fetch --no-tags origin main
+          RELEASE_SHA="$(git rev-list -n 1 "${RELEASE_TAG}")"
+
+          if ! git merge-base --is-ancestor "${RELEASE_SHA}" origin/main; then
+            echo "Release tag ${RELEASE_TAG} must point to a commit already reachable from main."
+            exit 1
+          fi
+
+          echo "release_tag=${RELEASE_TAG}" >> "${GITHUB_OUTPUT}"
+          echo "release_sha=${RELEASE_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER}/stock-research-ai:${RELEASE_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull verified image and check OCI revision
+        id: image
+        env:
+          IMAGE: ${{ steps.artifact.outputs.image }}
+          RELEASE_SHA: ${{ steps.artifact.outputs.release_sha }}
+        run: |
+          set -euo pipefail
+
+          if ! docker pull "${IMAGE}"; then
+            echo "No published image exists for ${RELEASE_SHA}."
+            echo "Tag a runtime commit that completed CI and published its immutable GHCR image."
+            exit 1
+          fi
+
+          IMAGE_REVISION="$(docker image inspect "${IMAGE}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+          if [ "${IMAGE_REVISION}" != "${RELEASE_SHA}" ]; then
+            echo "Image OCI revision ${IMAGE_REVISION} does not match tagged commit ${RELEASE_SHA}."
+            exit 1
+          fi
+
+          IMAGE_DIGEST="$(docker image inspect "${IMAGE}" --format '{{range .RepoDigests}}{{println .}}{{end}}' | grep '@sha256:' | head -n 1)"
+          if [ -z "${IMAGE_DIGEST}" ]; then
+            echo "Could not resolve an immutable digest for ${IMAGE}."
+            exit 1
+          fi
+
+          echo "image_digest=${IMAGE_DIGEST}" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate Streamlit health endpoint
+        env:
+          IMAGE: ${{ steps.artifact.outputs.image }}
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            status=$?
+            if [ "${status}" -ne 0 ]; then
+              docker logs "${CONTAINER_NAME}" || true
+            fi
+            docker rm --force "${CONTAINER_NAME}" || true
+            exit "${status}"
+          }
+
+          trap cleanup EXIT
+          docker run --detach --rm --name "${CONTAINER_NAME}" -p 8501:8501 "${IMAGE}"
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8501/_stcore/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Streamlit health endpoint did not become ready within 60 seconds."
+          exit 1
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.artifact.outputs.release_tag }}
+          RELEASE_SHA: ${{ steps.artifact.outputs.release_sha }}
+          IMAGE: ${{ steps.artifact.outputs.image }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.image_digest }}
+        run: |
+          set -euo pipefail
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "Release ${RELEASE_TAG} already exists."
+            exit 1
+          fi
+
+          RELEASE_NOTES="$(cat <<EOF
+          ## Verified container artifact
+
+          - Commit: [\`${RELEASE_SHA}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${RELEASE_SHA})
+          - Image: \`${IMAGE}\`
+          - Immutable digest: \`${IMAGE_DIGEST}\`
+          - Verification: pulled the CI-published image and passed \`/_stcore/health\`.
+
+          \`\`\`bash
+          docker pull ${IMAGE}
+          \`\`\`
+
+          This release is a reproducible delivery artifact. Hosted continuous deployment is intentionally not enabled.
+          EOF
+          )"
+
+          gh release create "${RELEASE_TAG}" \
+            --target "${RELEASE_SHA}" \
+            --title "Stock Research AI Assistant ${RELEASE_TAG}" \
+            --generate-notes \
+            --notes "${RELEASE_NOTES}" \
+            --verify-tag
